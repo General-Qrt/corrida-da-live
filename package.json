@@ -1,0 +1,13 @@
+{
+  "name": "corrida-da-live",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Corrida da Live: jogo para lives do TikTok (eventos reais via TikTok-Live-Connector + simulados)",
+  "type": "module",
+  "engines": { "node": ">=20.0.0" },
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "tiktok-live-connector": "^2.0.0",
+    "ws": "^8.18.2"
+  }
+}

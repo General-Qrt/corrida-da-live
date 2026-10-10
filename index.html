@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Corrida da Live</title>
+<style>
+:root{--bg:#0b0620;--card:#1a1040;--p:#ff2d95;--c:#00e5ff;--y:#ffd400;--g:#7cff4f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% -10%,#3b1470,var(--bg) 60%);color:#fff;font:600 14px/1.3 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent;min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding:10px 10px 40px}
+h1{margin:0;font-size:22px;letter-spacing:1px;text-transform:uppercase;background:linear-gradient(90deg,var(--p),var(--y),var(--c));-webkit-background-clip:text;background-clip:text;color:transparent;text-align:center;filter:drop-shadow(0 0 8px #ff2d9566)}
+.sim{margin:8px 0;padding:6px 8px;border:1px dashed var(--y);border-radius:10px;color:var(--y);font-size:11px;text-align:center;background:#ffd40012}
+.bar{display:flex;justify-content:space-between;align-items:center;margin:8px 0;gap:8px}
+#state{font-size:13px;flex:1}
+#timer{font-size:26px;font-weight:900;color:var(--c);text-shadow:0 0 10px var(--c);min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+.ends{display:flex;justify-content:space-between;font-size:10px;color:#ffffffaa;padding:0 4px 3px}
+.track{position:relative;background:#120a33;border:2px solid var(--c);border-radius:14px;overflow:hidden;box-shadow:0 0 18px #00e5ff55}
+.lane{position:relative;height:40px;border-bottom:1px dashed #ffffff22}
+.lane:nth-child(even){background:#ffffff08}
+.lane.empty:after{content:"vaga livre";position:absolute;left:10px;top:12px;font-size:11px;color:#ffffff44}
+.finish{position:absolute;top:0;bottom:0;right:0;width:12px;background:repeating-conic-gradient(#fff 0 25%,#000 0 50%) 0 0/8px 8px;z-index:1}
+.start{position:absolute;top:0;bottom:0;left:0;width:3px;background:var(--g);z-index:1;box-shadow:0 0 8px var(--g)}
+.r{position:absolute;top:3px;left:4px;width:34px;height:34px;z-index:2}
+.lane.empty .r{display:none}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:19px;border:2px solid #fff;box-shadow:0 0 8px #0008}
+.rk{position:absolute;left:-5px;top:-5px;min-width:16px;height:16px;border-radius:8px;background:var(--y);color:#000;font:900 10px/16px system-ui;text-align:center;font-style:normal;padding:0 3px}
+.nm{position:absolute;left:38px;top:9px;font-size:11px;white-space:nowrap;text-shadow:0 1px 3px #000,0 0 4px #000;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.r.nl .nm{left:auto;right:38px}
+.flame{display:none;position:absolute;right:30px;top:9px;width:34px;height:16px;border-radius:50% 0 0 50%;background:linear-gradient(270deg,#fff,#ffd400 30%,#ff5a00 65%,transparent);filter:blur(1px)}
+.r.turbo .flame{display:block;animation:fl .12s infinite alternate}
+.r.turbo .av{box-shadow:0 0 14px 4px #ff9a00,0 0 26px #ff2d95}
+.r.pop .av{animation:pop .45s}
+.r.sel .av{outline:2px dashed var(--c);outline-offset:2px}
+.r.win .av{animation:win .5s infinite alternate;box-shadow:0 0 20px 6px var(--y)}
+.lane.empty{cursor:default}
+@keyframes fl{from{transform:scaleX(.7);opacity:.8}to{transform:scaleX(1.2);opacity:1}}
+@keyframes pop{50%{transform:scale(1.4)}}
+@keyframes win{to{transform:scale(1.25) rotate(8deg)}}
+#ov{position:absolute;inset:0;background:#0b0620dd;display:grid;place-items:center;z-index:5;text-align:center;overflow:hidden}
+#ov[hidden]{display:none}
+#ov .tro{font-size:40px}
+#wn{font-size:22px;font-weight:900;color:var(--y);text-shadow:0 0 12px var(--y);max-width:90%;margin:0 auto;overflow:hidden;text-overflow:ellipsis}
+#wt{font-size:12px;color:#fff9}
+#top3{list-style:none;margin:8px 0 0;padding:0;font-size:12px}
+.cf{position:absolute;top:-20px;font-size:16px;animation:fall 2.4s linear infinite;left:var(--x);animation-delay:var(--d)}
+@keyframes fall{to{transform:translateY(340px) rotate(360deg)}}
+.row{display:flex;gap:8px;margin-top:10px}
+button,input,select{font:inherit;color:#fff;border-radius:12px;border:2px solid #ffffff33;background:var(--card);padding:10px 12px;min-height:44px}
+button{flex:1;cursor:pointer;font-weight:800}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.35}
+.main{background:linear-gradient(90deg,var(--p),#ff7a00);border-color:transparent;font-size:15px}
+.ok{background:#00ffa322;border-color:var(--g)}
+input[type=text],input:not([type]),select{flex:2;min-width:0;width:100%}
+.card{margin-top:12px;padding:10px;background:#ffffff0d;border:1px solid #ffffff22;border-radius:14px}
+.card h2{margin:0 0 6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--c)}
+.g1{border-color:var(--c)}.g2{border-color:var(--y)}.g3{border-color:var(--p)}
+#feed{font-size:11px;color:#ffffffb0;min-height:56px;margin-top:6px}
+#feed div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hist ol{margin:6px 0 0;padding-left:20px;font-size:12px}
+label{display:flex;align-items:center;gap:8px;font-size:12px}
+input[type=checkbox]{width:22px;height:22px;min-height:0;flex:none}
+#toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#000d;border:1px solid var(--c);padding:8px 14px;border-radius:20px;font-size:12px;z-index:9;max-width:90%;opacity:0;transition:opacity .2s;pointer-events:none;text-align:center}
+#toast.on{opacity:1}
+small{color:#ffffff88;font-weight:500}
+input[type=password]{flex:1;min-width:0;width:100%}
+.r.sim .av{border-style:dashed;opacity:.85}
+#cs{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:800;background:#ffffff22;text-transform:none;letter-spacing:0;color:#fff}
+#cs.live{background:#ff2d95}#cs.wait{background:#b8860b}#cs.off{background:#333}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>🏁 Corrida da Live</h1>
+<div class="sim" id="simBanner">⚠️ MODO SIMULADO — nenhum evento real do TikTok está conectado. Comentários e presentes aqui são de teste.</div>
+<div class="bar"><div id="state"></div><div id="timer">0</div></div>
+<div class="ends"><span>LARGADA</span><span>CHEGADA 🏁</span></div>
+<div class="track" id="track">
+<div class="start"></div><div class="finish"></div>
+<div id="lanes"></div>
+<div id="ov" hidden><div><div class="tro">🏆</div><div id="wn"></div><div id="wt"></div><ol id="top3"></ol><small id="nx"></small></div></div>
+</div>
+
+<small>Borda tracejada no avatar = corredor fictício ou simulado.</small>
+<div class="row"><button class="main" id="bMain">Iniciar</button><button id="bReset">↺ Reiniciar rodada</button></div>
+
+<div class="card"><h2>TikTok LIVE <span id="cs" class="off">servidor offline</span></h2>
+<div class="row" style="margin-top:0"><input id="tkUser" placeholder="@usuario da live" autocapitalize="off" autocorrect="off" maxlength="25"><input id="tkPin" type="password" placeholder="PIN do servidor" autocomplete="off"></div>
+<div class="row"><button id="bTkOn" class="ok">Conectar</button><button id="bTkOff">Desconectar</button></div>
+<small id="tkMsg"></small></div>
+
+<div class="card"><h2>Entrada gratuita · !correr</h2>
+<div class="row" style="margin-top:0"><input id="inName" maxlength="14" placeholder="Nome do participante" autocomplete="off"><button id="bAdd" style="flex:1">Adicionar</button></div>
+<div class="row"><button id="bSim">💬 Simular !correr</button><button id="bDemo" class="ok"></button></div>
+<div id="feed"></div></div>
+
+<div class="card"><h2>Presentes de TESTE (simulados)</h2>
+<select id="selR" aria-label="Corredor"></select>
+<div class="row"><button class="g1" data-g="0">⚡ Impulso 1</button><button class="g2" data-g="1">🔥 Impulso 2</button><button class="g3" data-g="2">🚀 Impulso 3</button></div>
+<small>Toque num corredor na pista ou escolha acima. Níveis: ×1.4 (3s), ×1.9 (4s), ×2.7 (5s). Não são presentes reais do TikTok.</small></div>
+
+<div class="card"><h2>Corredores fictícios</h2>
+<label><input type="checkbox" id="cFill" checked> Preencher vagas vazias</label>
+<div class="row"><input id="inBots" value="Turbo Tião, Flash Bia, Rex, Nina, Zeca, Lulu, Max, Duda" aria-label="Nomes fictícios separados por vírgula"></div></div>
+
+<div class="row"><button id="bHist">🏆 Histórico de vencedores</button></div>
+<div class="card" id="hist" hidden><h2>Vencedores</h2><ol id="hl"></ol><div class="row"><button id="bClr">Limpar histórico</button></div></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const Q=s=>document.querySelector(s);
+const MAX=8,LOBBY=12,PAUSE=7,MAXT=40,LEN=22;
+const AV=['🦊','🐼','🐸','🦁','🐯','🐵','🦄','🐙','🐧','🐲','🦉','🐰'];
+const COL=['#ff2d95','#00a8ff','#e0a800','#2fbf3a','#ff7a00','#8a4dff','#00b58a','#e03a3a'];
+const GIFTS=[{n:'Impulso 1',m:1.4,d:3},{n:'Impulso 2',m:1.9,d:4},{n:'Impulso 3',m:2.7,d:5}];
+const POOL=['ana','biel','carla','dudu','eva','fabio','gabi','hugo','iris','joao','kaka','lia','marcos','nina','otavio','paula','rafa','sofia','tiago','vini'];
+const S={meta:{},phase:'lobby',t:LOBBY,paused:false,round:1,queue:[],runners:[],raceT:0,demo:true,demoT:1.5,sel:0,winner:null,hist:[]};
+try{S.hist=JSON.parse(localStorage.getItem('cl_hist')||'[]')}catch(e){}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let toastT=null;
+function toast(m){const t=Q('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1800)}
+function look(n){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;return{e:AV[h%AV.length],c:COL[(h>>3)%COL.length]}}
+function feed(m){const f=Q('#feed'),d=document.createElement('div');d.textContent=m;f.appendChild(d);while(f.children.length>4)f.firstChild.remove()}
+
+/* ===== Camada de eventos =====
+ Futuramente, um conector autorizado do TikTok chamaria Live.handle() com eventos reais:
+ {type:'comment',user,text} | {type:'follow',user} | {type:'gift',user,level}
+ Hoje, só a interface de teste (simulada) chama esta função. */
+const Live={handle(e){
+ const real=e.source==='tiktok',tag=real?'[AO VIVO] ':'[SIM] ',u=String(e.uniqueId||e.user||'');
+ if(e.type==='comment'){
+  feed(tag+'@'+u+': '+e.text);
+  if(/^\s*!correr\b/i.test(e.text))addPlayer(u,real||!!e.quiet,{uid:real?u.toLowerCase():null,sim:!real});
+ }else if(e.type==='follow'){feed(tag+'@'+u+' seguiu')}
+ else if(e.type==='gift'){
+  if(!real)return applyGift(e.level,true);
+  const lu=u.toLowerCase(),i=S.runners.findIndex(r=>!r.bot&&!r.sim&&(r.uid?r.uid===lu:r.name.toLowerCase()===lu.slice(0,14)));
+  if(S.phase!=='racing'||i<0)return feed(tag+'🎁 @'+u+(S.phase!=='racing'?' (sem corrida em andamento)':' (não está na corrida)'));
+  applyGift(Math.min(2,Math.max(0,(e.level|0)-1)),false,i,u)}
+}};
+
+function addPlayer(raw,quiet,meta){
+ const name=String(raw).trim().replace(/^@/,'').slice(0,14);
+ if(!name){toast('Digite um nome');return false}
+ if(S.queue.length>=MAX){if(!quiet)toast('Fila cheia ('+MAX+')');return false}
+ if(S.queue.some(q=>q.toLowerCase()===name.toLowerCase())){if(!quiet)toast(name+' já está inscrito nesta rodada');return false}
+ S.queue.push(name);S.meta[name.toLowerCase()]=meta||{uid:null,sim:false};if(!quiet)toast(name+' entrou na fila ✔');return true}
+function rndName(){let n,i=0;do{n=POOL[Math.random()*POOL.length|0]+(i++>3?(Math.random()*99|0):'')}while(S.queue.some(q=>q.toLowerCase()===n.toLowerCase())&&i<40);return n}
+function botNames(){return Q('#inBots').value.split(',').map(s=>s.trim().slice(0,14)).filter(Boolean).slice(0,20)}
+
+function startRace(){
+ const names=S.queue.slice(0,MAX).map(n=>({name:n,bot:false}));
+ if(Q('#cFill').checked){
+  const pool=botNames().filter(b=>!names.some(n=>n.name.toLowerCase()===b.toLowerCase())).sort(()=>Math.random()-.5);let i=1;
+  while(names.length<MAX)names.push({name:pool.shift()||('Bot '+(i++)),bot:true});
+ }
+ if(names.length<2){toast('Mínimo de 2 corredores (ative os fictícios)');return false}
+ S.queue=S.queue.slice(MAX);
+ S.runners=names.map(o=>{const m=S.meta[o.name.toLowerCase()]||{};return{name:o.name,bot:o.bot,uid:o.bot?null:(m.uid||null),sim:o.bot||!!m.sim,p:0,v:(1/LEN)*(.94+Math.random()*.12),n:0,nt:0,tn:0,turbo:0,mult:1,rank:0,pop:0}});
+ S.raceT=0;S.phase='racing';S.winner=null;S.sel=0;syncSel();return true}
+function endRace(w){
+ w.p=1;S.phase='finished';S.t=PAUSE;S.winner=w;
+ S.hist.unshift({round:S.round,name:w.name,time:+S.raceT.toFixed(1),bot:w.bot});S.hist=S.hist.slice(0,30);
+ try{localStorage.setItem('cl_hist',JSON.stringify(S.hist))}catch(e){}
+ const top=[...S.runners].sort((a,b)=>b.p-a.p).slice(0,3);
+ Q('#wn').textContent=w.name;Q('#wt').textContent='venceu a rodada '+S.round+' em '+S.raceT.toFixed(1)+'s';
+ Q('#top3').innerHTML=top.map((r,i)=>'<li>'+['🥇','🥈','🥉'][i]+' '+esc(r.name)+'</li>').join('');
+ confetti();Q('#ov').hidden=false;renderHist()}
+function confetti(){const o=Q('#ov');o.querySelectorAll('.cf').forEach(e=>e.remove());
+ for(let i=0;i<26;i++){const d=document.createElement('div');d.className='cf';d.textContent=['🎉','✨','⭐','🎊'][i%4];d.style.setProperty('--x',(Math.random()*95)+'%');d.style.setProperty('--d',(Math.random()*-2.4)+'s');o.appendChild(d)}}
+function nextRound(){S.round++;S.phase='lobby';S.t=LOBBY;S.runners=[];S.winner=null;Q('#ov').hidden=true;syncSel()}
+function resetRound(){
+ if(S.phase==='racing'||S.phase==='finished'){S.runners.filter(r=>!r.bot).forEach(r=>{if(S.queue.length<MAX&&!S.queue.some(q=>q.toLowerCase()===r.name.toLowerCase()))S.queue.push(r.name)})}
+ S.phase='lobby';S.t=LOBBY;S.runners=[];S.winner=null;S.paused=false;Q('#ov').hidden=true;syncSel();toast('Rodada reiniciada')}
+
+function applyGift(level,sim,idx,from){
+ if(S.phase!=='racing'){toast('Presentes só funcionam durante a corrida');return}
+ const r=S.runners[idx==null?S.sel:idx],g=GIFTS[level];if(!r||!g)return;
+ r.mult=Math.max(r.turbo>0?r.mult:1,g.m);r.turbo=g.d;
+ feed((sim?'[TESTE] ':'[AO VIVO] ')+'🎁 '+(from?'@'+from+' · ':'')+g.n+' → '+r.name)}
+
+function syncSel(){const s=Q('#selR');
+ if(S.phase==='lobby'){s.innerHTML='<option>— aguardando a largada —</option>';s.disabled=true;return}
+ s.disabled=false;s.innerHTML=S.runners.map((r,i)=>'<option value="'+i+'">'+esc(r.name)+'</option>').join('');s.value=S.sel}
+
+/* ===== Pista ===== */
+const lanesEl=Q('#lanes'),L=[];
+for(let i=0;i<MAX;i++){const l=document.createElement('div');l.className='lane empty';
+ l.innerHTML='<div class="r"><i class="flame"></i><div class="av"></div><i class="rk"></i><span class="nm"></span></div>';
+ l.addEventListener('click',()=>{if(S.phase==='lobby'||!S.runners[i])return;S.sel=i;Q('#selR').value=i});
+ lanesEl.appendChild(l);L.push({l,r:l.firstChild,av:l.querySelector('.av'),rk:l.querySelector('.rk'),nm:l.querySelector('.nm'),n:null})}
+
+function tick(dt){
+ if(S.demo){S.demoT-=dt;if(S.demoT<=0){S.demoT=1.2+Math.random()*2.2;
+  if(S.queue.length<MAX)Live.handle({type:'comment',user:rndName(),text:'!correr',simulated:true,quiet:true})}}
+ if(S.phase==='lobby'){S.t-=dt;if(S.t<=0){if(!startRace())S.t=4}}
+ else if(S.phase==='racing'){
+  S.raceT+=dt;let lead=0;for(const r of S.runners)lead=Math.max(lead,r.p);
+  for(const r of S.runners){
+   r.tn-=dt;if(r.tn<=0){r.nt=(Math.random()-.45)*.4;r.tn=.5+Math.random()*.8}
+   r.n+=(r.nt-r.n)*Math.min(1,dt*3);
+   if(r.turbo>0){r.turbo-=dt;if(r.turbo<=0){r.turbo=0;r.mult=1}}
+   r.p+=r.v*(1+r.n)*(1+(lead-r.p)*.6)*r.mult*dt;
+   if(r.pop>0)r.pop-=dt}
+  const sorted=[...S.runners].sort((a,b)=>b.p-a.p);
+  sorted.forEach((r,i)=>{if(r.rank&&i+1<r.rank)r.pop=.45;r.rank=i+1});
+  if(sorted[0].p>=1||S.raceT>=MAXT)endRace(sorted[0]);
+ }else if(S.phase==='finished'){S.t-=dt;if(S.t<=0)nextRound()}
+}
+function draw(){
+ const lobby=S.phase==='lobby',roster=lobby?S.queue.map(n=>({name:n,sim:!!(S.meta[n.toLowerCase()]||{}).sim,p:0,turbo:0,pop:0,rank:0})):S.runners;
+ L.forEach((o,i)=>{const r=roster[i];o.l.classList.toggle('empty',!r);if(!r){o.n=null;return}
+  if(o.n!==r.name){o.n=r.name;const k=look(r.name);o.av.textContent=k.e;o.av.style.background=k.c;o.nm.textContent=r.name}
+  o.r.style.left='calc(4px + '+(r.p*100)+'% - '+(r.p*50)+'px)';
+  o.r.classList.toggle('turbo',r.turbo>0);o.r.classList.toggle('pop',r.pop>0);
+  o.r.classList.toggle('sel',!lobby&&S.sel===i);o.r.classList.toggle('nl',r.p>.3);o.r.classList.toggle('sim',!!r.sim);
+  o.r.classList.toggle('win',S.phase==='finished'&&r===S.winner);
+  o.rk.style.display=lobby?'none':'';o.rk.textContent=r.rank?r.rank+'º':''});
+ let st,tm;
+ if(S.paused){st='⏸ Pausado'}
+ else if(lobby)st='🟢 Inscrições abertas · '+S.queue.length+'/'+MAX+' na fila';
+ else if(S.phase==='racing')st='🏎️ Rodada '+S.round+' · corrida em andamento';
+ else st='🏆 Fim da rodada '+S.round;
+ tm=S.phase==='racing'?Math.max(0,MAXT-S.raceT):Math.max(0,S.t);
+ Q('#state').textContent=st;Q('#timer').textContent=tm.toFixed(S.phase==='racing'?0:0)+'s';
+ Q('#nx').textContent=S.phase==='finished'?'Próxima rodada em '+Math.ceil(S.t)+'s':'';
+ Q('#bMain').textContent=S.paused?'▶ Continuar':lobby?'▶ Iniciar corrida':S.phase==='racing'?'⏸ Pausar':'⏭ Próxima rodada';
+ document.querySelectorAll('[data-g]').forEach(b=>b.disabled=S.phase!=='racing'||S.paused)}
+let last=performance.now();
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(!S.paused)tick(dt);draw();requestAnimationFrame(loop)}
+
+/* ===== Controles ===== */
+function renderHist(){Q('#hl').innerHTML=S.hist.length?S.hist.map(h=>'<li>Rodada '+h.round+': <b>'+esc(h.name)+'</b> · '+h.time+'s'+(h.bot?' <small>(fictício)</small>':'')+'</li>').join(''):'<small>Nenhuma corrida concluída ainda.</small>'}
+Q('#bMain').onclick=()=>{if(S.paused)S.paused=false;else if(S.phase==='lobby')startRace();else if(S.phase==='racing')S.paused=true;else nextRound()};
+Q('#bReset').onclick=resetRound;
+Q('#bAdd').onclick=()=>{const i=Q('#inName');if(addPlayer(i.value))i.value=''};
+Q('#inName').addEventListener('keydown',e=>{if(e.key==='Enter')Q('#bAdd').click()});
+Q('#bSim').onclick=()=>Live.handle({type:'comment',user:rndName(),text:'!correr',simulated:true});
+const bd=Q('#bDemo');function demoLbl(){bd.textContent='Demo automática: '+(S.demo?'LIGADA':'DESLIGADA');bd.classList.toggle('ok',S.demo)}
+bd.onclick=()=>{S.demo=!S.demo;demoLbl()};demoLbl();
+document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>Live.handle({type:'gift',level:+b.dataset.g,simulated:true}));
+Q('#selR').onchange=e=>{S.sel=+e.target.value||0};
+Q('#bHist').onclick=()=>{const h=Q('#hist');h.hidden=!h.hidden;renderHist()};
+Q('#bClr').onclick=()=>{S.hist=[];try{localStorage.removeItem('cl_hist')}catch(e){}renderHist()};
+/* ===== Conexão com o servidor (WebSocket) — eventos reais chegam marcados source:'tiktok' ===== */
+const CS=Q('#cs'),MSG=Q('#tkMsg'),BAN=Q('#simBanner'),SIMTXT=BAN.textContent,MSG0='Eventos reais só chegam com o servidor conectado a uma live. Nenhuma senha do TikTok é pedida.';
+let ws=null,wsT=0,hb=null;MSG.textContent=MSG0;
+function cStat(s){const st=s.status,
+ m={connected:['live','AO VIVO @'+s.username],connecting:['wait','conectando…'],reconnecting:['wait','reconectando…'],idle:['off','servidor online · sem live'],offline:['off','canal fora do ar'],ended:['off','live encerrada'],error:['off','erro de conexão'],off:['off','servidor offline']}[st]||['off',st];
+ CS.className=m[0];CS.textContent=m[1];MSG.textContent=s.detail||(s.control===false?'Servidor sem ADMIN_PIN: conexão com o TikTok desativada.':MSG0);
+ const live=st==='connected';BAN.textContent=live?'🔴 AO VIVO — comentários, presentes e seguidores reais de @'+s.username+'. Botões de teste continuam simulados e marcados [SIM]/[TESTE].':SIMTXT;
+ if(live&&S.demo){S.demo=false;demoLbl();toast('Demo automática desligada (live real conectada)')}}
+function wsOpen(){
+ if(!/^https?:$/.test(location.protocol))return;
+ try{ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws')}catch(e){return}
+ ws.onopen=()=>{wsT=0;clearInterval(hb);hb=setInterval(()=>{try{ws.send('{"type":"ping"}')}catch(e){}},25000)};
+ ws.onmessage=ev=>{let d;try{d=JSON.parse(ev.data)}catch(e){return}
+  if(d.type==='status')cStat(d);
+  else if(d.type==='ack'){if(!d.ok)toast(d.message||'Recusado')}
+  else if((d.type==='comment'||d.type==='gift'||d.type==='follow')&&d.source==='tiktok')Live.handle(d)};
+ ws.onclose=()=>{clearInterval(hb);cStat({status:'off'});setTimeout(wsOpen,Math.min(15000,2000*(++wsT)))}}
+function wsSend(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o));else toast('Servidor offline')}
+Q('#bTkOn').onclick=()=>wsSend({type:'connect',username:Q('#tkUser').value,pin:Q('#tkPin').value});
+Q('#bTkOff').onclick=()=>wsSend({type:'disconnect',pin:Q('#tkPin').value});
+wsOpen();
+syncSel();renderHist();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
